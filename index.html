@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collect Account - App Mode</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* === BASE STYLES === */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F4F7F9;
+            color: #172B4D;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden; /* Mencegah scroll saat slide */
+        }
+
+        /* === CONTAINER === */
+        .app-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 480px; /* Sedikit lebih ramping seperti HP */
+            padding: 30px 25px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(9, 30, 66, 0.1);
+            position: relative;
+            overflow: hidden;
+            min-height: 550px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* === 1. PROGRESS STEPPER === */
+        .stepper-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 0 10px;
+            position: relative;
+        }
+        .stepper-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #EBECF0;
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+        .step {
+            width: 30px;
+            height: 30px;
+            background: #EBECF0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #5E6C84;
+            position: relative;
+            z-index: 2;
+            transition: 0.3s;
+        }
+        .step.active {
+            background: #0052CC;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.15);
+        }
+        .step.completed {
+            background: #00875A;
+            color: white;
+        }
+
+        /* === 5. SLIDE TRANSITIONS === */
+        .view-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            /* Default hidden handled by JS classes */
+        }
+        
+        .hidden { display: none !important; }
+
+        /* Animation Classes */
+        .slide-in-right {
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .slide-in-left {
+            animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* === TYPOGRAPHY & UTILS === */
+        h1 { font-size: 1.6rem; font-weight: 800; color: #091E42; margin-bottom: 8px; text-align: center; }
+        p.subtitle { color: #5E6C84; font-size: 0.95rem; text-align: center; margin-bottom: 20px; }
+        .divider { height: 1px; background: #EBECF0; margin: 25px 0; width: 100%; }
+
+        /* === 3. SMART MENU CARDS === */
+        .menu-card {
+            background: #ffffff;
+            border: 1px solid #DFE1E6;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Active State (Open) */
+        .menu-card.open:hover {
+            border-color: #0052CC;
+            box-shadow: 0 8px 20px rgba(0, 82, 204, 0.1);
+            transform: translateY(-2px);
+        }
+        .menu-card.open .menu-icon { background: #E6F0FF; color: #0052CC; }
+
+        /* Locked State (Closed) */
+        .menu-card.locked {
+            background: #F4F5F7;
+            border-color: transparent;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        .menu-card.locked .menu-title { color: #5E6C84; }
+        
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .badge-open { background: #E3FCEF; color: #006644; }
+        .badge-closed { background: #FFEBE6; color: #DE350B; }
+
+        .menu-title { font-weight: 700; color: #172B4D; font-size: 1.1rem; display: block; margin-bottom: 4px; }
+        .menu-desc { font-size: 0.85rem; color: #5E6C84; }
+
+        /* === 2. FLOATING LABELS FORM === */
+        .form-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px 16px 6px; /* Padding atas lebih besar untuk label */
+            border: 2px solid #DFE1E6;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: transparent;
+            transition: 0.2s;
+            height: 56px;
+        }
+        
+        .form-input:focus { border-color: #0052CC; outline: none; }
+        
+        /* Label Styling */
+        .floating-label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6B778C;
+            font-size: 1rem;
+            pointer-events: none;
+            transition: 0.2s ease all;
+            background-color: transparent;
+        }
+
+        /* Saat input focus atau ada isi */
+        .form-input:focus ~ .floating-label,
+        .form-input:not(:placeholder-shown) ~ .floating-label {
+            top: 14px;
+            font-size: 0.75rem;
+            color: #0052CC;
+            font-weight: 600;
+        }
+
+        /* Readonly input style */
+        .form-input[readonly] { background-color: #F4F5F7; color: #5E6C84; border-color: #EBECF0; }
+
+        /* === BUTTONS === */
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background-color: #0052CC;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: auto; /* Push to bottom */
+            box-shadow: 0 4px 12px rgba(0, 82, 204, 0.2);
+        }
+        .btn-primary:hover { background-color: #003d80; transform: translateY(-2px); }
+
+        .btn-back {
+            background: none; border: none; color: #5E6C84; cursor: pointer; font-weight: 600; 
+            margin-bottom: 10px; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem;
+            padding: 5px 0;
+        }
+        .btn-back:hover { color: #172B4D; }
+
+        /* Criteria Box (Updated) */
+        .criteria-box {
+            background-color: #E6F0FF;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .criteria-box h3 { color: #0052CC; font-size: 0.95rem; margin-bottom: 8px; font-weight: 700; }
+        .criteria-list { list-style: none; font-size: 0.85rem; color: #42526E; }
+        .criteria-list li { margin-bottom: 5px; padding-left: 18px; position: relative; }
+        .criteria-list li::before { content: "✓"; color: #0052CC; font-weight: bold; position: absolute; left: 0; }
+        
+        /* Rules List */
+        .rules-list li { padding-left: 25px; margin-bottom: 12px; font-size: 0.95rem; position: relative; }
+        .rules-list li::before { content: "⚠️"; position: absolute; left: 0; }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="stepper-container">
+            <div class="stepper-line"></div>
+            <div id="step-1" class="step active">1</div>
+            <div id="step-2" class="step">2</div>
+            <div id="step-3" class="step">3</div>
+            <div id="step-4" class="step">4</div>
+        </div>
+
+        <div id="view-home" class="view-section slide-in-right">
+            <div style="text-align:center; margin-bottom:10px;">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#0052CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            </div>
+            <h1>Collect Account</h1>
+            <p class="subtitle">Sistem Data Akun Terintegrasi</p>
+            
+            <div class="criteria-box">
+                <h3>Kriteria Wajib:</h3>
+                <ul class="criteria-list">
+                    <li>Min. Nov 2024 & 30 Koneksi.</li>
+                    <li>Bukan akun Nuyul/Beli.</li>
+                    <li>No Freeze/Limit Mingguan.</li>
+                    <li>Wajib Lokasi Indonesia.</li>
+                </ul>
+            </div>
+            
+            <button class="btn-primary" onclick="goToView('rules', 2)">Start Sewa 🚀</button>
+        </div>
+
+        <div id="view-rules" class="view-section hidden">
+            <h1>Rules & Syarat</h1>
+            <p class="subtitle">Mohon baca dengan teliti</p>
+            
+            <ul class="rules-list" style="flex:1;">
+                <li>Pastikan akun memiliki minimal 30 koneksi aktif.</li>
+                <li>Dilarang keras menggunakan akun hasil generate/bot.</li>
+                <li>1 Nomor WhatsApp hanya untuk 1 Akun LinkedIn.</li>
+                <li>Bersihkan semua permintaan koneksi (pending request) sebelum submit.</li>
+                <li>Pastikan akun tidak sedang dalam masa pembatasan (limit).</li>
+            </ul>
+            
+            <button class="btn-primary" onclick="goToView('menu', 3)">Saya Paham & Lanjut</button>
+        </div>
+
+        <div id="view-menu" class="view-section hidden">
+            <button class="btn-back" onclick="goToView('home', 1)">← Kembali</button>
+            <h1>Pilih Tipe Form</h1>
+            <p class="subtitle">Silahkan pilih sesuai kebutuhan</p>
+
+            <div id="card-new" class="menu-card" onclick="checkAndGo('new')">
+                <span class="menu-title">📄 Form New Acc</span>
+                <span class="menu-desc">Untuk pendaftaran akun baru.</span>
+                <span class="menu-desc" style="margin-top:5px; font-weight:500;">Jam: 21:00 - 02:00</span>
+                <div id="badge-new" class="status-badge badge-closed">CLOSED 🔒</div>
+            </div>
+
+            <div id="card-unrestrict" class="menu-card" onclick="checkAndGo('unrestrict')">
+                <span class="menu-title">🔓 Form Un Restric</span>
+                <span class="menu-desc">Untuk pemulihan akun limit.</span>
+                <span class="menu-desc" style="margin-top:5px; font-weight:500;">Jam: 05:00 - 10:00</span>
+                <div id="badge-unrestrict" class="status-badge badge-closed">CLOSED 🔒</div>
+            </div>
+        </div>
+
+        <div id="view-form-new" class="view-section hidden">
+            <button class="btn-back" onclick="goToView('menu', 3)">← Ganti Form</button>
+            <h1>Form New Acc</h1>
+            <p class="subtitle">Sesi Aktif: 21:00 - 02:00</p>
+            
+            <div style="flex:1;">
+                <div class="form-group">
+                    <input type="email" id="new_email" class="form-input" placeholder=" ">
+                    <label class="floating-label">Email LinkedIn</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="new_pass" class="form-input" placeholder=" ">
+                    <label class="floating-label">Password LinkedIn</label>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="new_conn" class="form-input" placeholder=" ">
+                    <label class="floating-label">Jumlah Koneksi (Min 30)</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="new_year" class="form-input" placeholder=" ">
+                    <label class="floating-label">Tahun Akun (Nov 2024)</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="new_code" class="form-input" value="6588" readonly placeholder=" ">
+                    <label class="floating-label">Kode Grup</label>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="sendNewAcc()">Kirim Request</button>
+        </div>
+
+        <div id="view-form-unrestrict" class="view-section hidden">
+            <button class="btn-back" onclick="goToView('menu', 3)">← Ganti Form</button>
+            <h1>Form Un Restric</h1>
+            <p class="subtitle">Sesi Aktif: 05:00 - 10:00</p>
+            
+            <div style="flex:1;">
+                <div class="form-group">
+                    <input type="email" id="un_email" class="form-input" placeholder=" ">
+                    <label class="floating-label">Email LinkedIn</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="un_pass" class="form-input" placeholder=" ">
+                    <label class="floating-label">Password LinkedIn</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="un_code" class="form-input" value="6588" readonly placeholder=" ">
+                    <label class="floating-label">Kode Grup</label>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="sendUnrestrict()">Kirim Request</button>
+        </div>
+
+    </div>
+
+    <script>
+        // === STATE MANAGEMENT ===
+        let currentStep = 1;
+
+        // === 5. SLIDE TRANSITION LOGIC ===
+        function goToView(viewId, step) {
+            // Determine direction
+            const direction = step > currentStep ? 'slide-in-right' : 'slide-in-left';
+            currentStep = step;
+
+            // Update Stepper UI
+            updateStepper(step);
+
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('slide-in-right', 'slide-in-left');
+            });
+
+            // Show new view with animation
+            const target = document.getElementById('view-' + viewId);
+            target.classList.remove('hidden');
+            target.classList.add(direction);
+
+            // Special logic: If entering menu, update smart states
+            if (viewId === 'menu') {
+                updateMenuStates();
+            }
+        }
+
+        // === 1. STEPPER LOGIC ===
+        function updateStepper(step) {
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById(`step-${i}`);
+                el.classList.remove('active', 'completed');
+                if (i < step) {
+                    el.classList.add('completed');
+                    el.innerHTML = "✓";
+                } else if (i === step) {
+                    el.classList.add('active');
+                    el.innerHTML = i;
+                } else {
+                    el.innerHTML = i;
+                }
+            }
+        }
+
+        // === 3. SMART VISUAL STATE LOGIC ===
+        function updateMenuStates() {
+            const now = new Date();
+            const hour = now.getHours();
+
+            // Config: New Acc (21-02), Unrestrict (05-10)
+            const isNewOpen = (hour >= 21 || hour < 2);
+            const isUnOpen = (hour >= 5 && hour < 10);
+
+            // Update Card New Acc
+            updateCardStyle('card-new', 'badge-new', isNewOpen);
+            // Update Card Unrestrict
+            updateCardStyle('card-unrestrict', 'badge-unrestrict', isUnOpen);
+        }
+
+        function updateCardStyle(cardId, badgeId, isOpen) {
+            const card = document.getElementById(cardId);
+            const badge = document.getElementById(badgeId);
+
+            if (isOpen) {
+                card.classList.add('open');
+                card.classList.remove('locked');
+                badge.classList.add('badge-open');
+                badge.classList.remove('badge-closed');
+                badge.innerText = "OPEN ●";
+            } else {
+                card.classList.add('locked');
+                card.classList.remove('open');
+                badge.classList.add('badge-closed');
+                badge.classList.remove('badge-open');
+                badge.innerText = "CLOSED 🔒";
+            }
+        }
+
+        // === NAVIGATION CHECKER ===
+        function checkAndGo(type) {
+            const now = new Date();
+            const hour = now.getHours();
+
+            if (type === 'new') {
+                if (hour >= 21 || hour < 2) {
+                    goToView('form-new', 4);
+                } else {
+                    // Shake animation effect for locked card could be added here
+                    alert("⚠️ Maaf, Form New Acc sedang TUTUP.\nJam Operasional: 21:00 - 02:00");
+                }
+            } else if (type === 'unrestrict') {
+                if (hour >= 5 && hour < 10) {
+                    goToView('form-unrestrict', 4);
+                } else {
+                    alert("⚠️ Maaf, Form Un Restric sedang TUTUP.\nJam Operasional: 05:00 - 10:00");
+                }
+            }
+        }
+
+        // === WHATSAPP SENDER ===
+        const targetNumber = "12672316588";
+
+        function sendNewAcc() {
+            const email = document.getElementById('new_email').value;
+            const pass = document.getElementById('new_pass').value;
+            const conn = document.getElementById('new_conn').value;
+            const year = document.getElementById('new_year').value;
+            const code = document.getElementById('new_code').value;
+
+            if(!email || !pass || !conn || !year) {
+                alert("Mohon lengkapi semua data!");
+                return;
+            }
+
+            const message = `Hello Admin, I want to submit a request for *New Account Renting*.%0A%0A` +
+                            `*Group Code:* ${code}%0A` +
+                            `*Email:* ${email}%0A` +
+                            `*Password:* ${pass}%0A` +
+                            `*Connections:* ${conn}%0A` +
+                            `*Year/Month:* ${year}%0A%0A` +
+                            `Please review my data. Thank you!`;
+
+            window.open(`https://wa.me/${targetNumber}?text=${message}`, '_blank');
+        }
+
+        function sendUnrestrict() {
+            const email = document.getElementById('un_email').value;
+            const pass = document.getElementById('un_pass').value;
+            const code = document.getElementById('un_code').value;
+
+            if(!email || !pass) {
+                alert("Mohon lengkapi semua data!");
+                return;
+            }
+
+            const message = `Hello Admin, I want to submit a request for *Un-Restrict Account*.%0A%0A` +
+                            `*Group Code:* ${code}%0A` +
+                            `*Email:* ${email}%0A` +
+                            `*Password:* ${pass}%0A%0A` +
+                            `Please review my data. Thank you!`;
+
+            window.open(`https://wa.me/${targetNumber}?text=${message}`, '_blank');
+        }
+    </script>
+</body>
+</html>
